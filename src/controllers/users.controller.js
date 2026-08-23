@@ -30,7 +30,7 @@ const createUser = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Body vacío o mal formado' });
     }
 
-    const { first_name, last_name, email, age, password, role } = req.body;
+    const { first_name, last_name, email, age, password } = req.body;
 
     if (!first_name || !last_name || !email || !age || !password) {
       return res.status(400).json({ status: 'error', message: 'Faltan datos obligatorios' });
@@ -47,7 +47,6 @@ const createUser = async (req, res) => {
       email,
       age: Number(age),
       password: createHash(password),
-      role: role || 'user',
     });
 
     const cart = await cartModel.create({
@@ -75,6 +74,7 @@ const updateUser = async (req, res) => {
     }
 
     const updateData = { ...req.body };
+    delete updateData.role;
 
     if (updateData.password) {
       updateData.password = createHash(updateData.password);

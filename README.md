@@ -1,6 +1,6 @@
 # Entrega N.º 1 — Backend II: Diseño y Arquitectura Backend
 
-Proyecto backend de ecommerce desarrollado sobre Node.js y Express, con persistencia en MongoDB (Mongoose), autenticación basada en sesiones y JWT con Passport, autorización por roles y CRUD de usuarios.
+Proyecto backend de ecommerce desarrollado sobre Node.js y Express, con persistencia en MongoDB (Mongoose), autenticación basada en JWT con Passport, autorización por roles y CRUD de usuarios.
 
 ---
 
@@ -60,7 +60,7 @@ El servidor quedará escuchando en `http://localhost:8080`.
 
 | Método | Endpoint | Descripción | Autenticación / Roles |
 |---|---|---|---|
-| `POST` | `/api/sessions/register` | Registra un nuevo usuario con carrito asociado | Público |
+| `POST` | `/api/sessions/register` | Registra un nuevo usuario con carrito asociado (rol `user` por defecto) | Público |
 | `POST` | `/api/sessions/login` | Inicia sesión y genera cookie `HttpOnly` (`token_coder`) | Público |
 | `GET` | `/api/sessions/current` | Devuelve los datos del usuario autenticado | Requiere JWT (`passportCall('current')`) |
 | `GET` | `/api/sessions/logout` | Cierra la sesión y limpia la cookie | Público |
@@ -71,7 +71,7 @@ El servidor quedará escuchando en `http://localhost:8080`.
 |---|---|---|---|
 | `GET` | `/api/users` | Obtiene la lista completa de usuarios | Solo `admin` |
 | `GET` | `/api/users/:uid` | Obtiene un usuario específico por su `_id` | Público |
-| `POST` | `/api/users` | Crea un usuario y asocia su carrito | Público |
+| `POST` | `/api/users` | Crea un usuario y asocia su carrito (rol `user` por defecto) | Público |
 | `PUT` | `/api/users/:uid` | Actualiza los datos de un usuario (hashea nuevo password si se envía) | Público |
 | `DELETE` | `/api/users/:uid` | Elimina un usuario y su carrito asociado | Solo `admin` |
 
@@ -92,7 +92,7 @@ El servidor quedará escuchando en `http://localhost:8080`.
   "password": "coderPassword123"
 }
 ```
-- **Respuesta esperada:** Status `201 Created` con los datos del usuario creado (sin incluir el campo `password`) y su referencia `cart` asignada.
+- **Respuesta esperada:** Status `201 Created` con los datos del usuario creado (sin incluir el campo `password`), con rol `user` por defecto y su referencia `cart` asignada.
 - **Validación de duplicados:** Si se intenta registrar el mismo email, devuelve status `401`/`409` con mensaje de usuario existente.
 
 ---
@@ -144,8 +144,8 @@ El servidor quedará escuchando en `http://localhost:8080`.
 ### 4. Probar CRUD de Usuarios
 
 - **GET `/api/users/:uid`**: Obtiene el usuario indicado. Devuelve `404 Not Found` si el ID no existe.
-- **POST `/api/users`**: Crea un usuario hasheando la contraseña con `createHash` y vinculando un nuevo `cart`.
-- **PUT `/api/users/:uid`**: Actualiza campos. Si se incluye `"password"`, este es hasheado automáticamente antes de persistir.
+- **POST `/api/users`**: Crea un usuario con rol `user` por defecto, hasheando la contraseña con `createHash` y vinculando un nuevo `cart`.
+- **PUT `/api/users/:uid`**: Actualiza campos (el campo `role` no puede ser modificado por este medio). Si se incluye `"password"`, este es hasheado automáticamente antes de persistir.
 - **DELETE `/api/users/:uid`**: Elimina el usuario y su carrito. Requiere rol `admin`.
 
 ---
@@ -157,7 +157,7 @@ El servidor quedará escuchando en `http://localhost:8080`.
    - Intentar ejecutar `DELETE http://localhost:8080/api/users/<uid>` o `GET http://localhost:8080/api/users`.
    - **Resultado:** Status `403 Forbidden` (`No tiene permisos para acceder a este recurso`).
 2. **Usuario con rol `admin`:**
-   - Crear un usuario con `"role": "admin"` o actualizar su campo en MongoDB.
-   - Iniciar sesión como dicho usuario.
+   - Modificar manualmente el campo `role` a `"admin"` en el documento del usuario en MongoDB.
+   - Iniciar sesión nuevamente con las credenciales de ese usuario para obtener una nueva cookie/JWT con el rol actualizado.
    - Ejecutar `GET http://localhost:8080/api/users` o `DELETE http://localhost:8080/api/users/<uid>`.
    - **Resultado:** Status `200 OK` con acceso permitido.

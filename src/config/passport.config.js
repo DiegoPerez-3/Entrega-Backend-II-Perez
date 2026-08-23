@@ -20,7 +20,7 @@ export const initializePassport = () => {
       },
       async (req, username, password, done) => {
         try {
-          const { first_name, last_name, age, role } = req.body;
+          const { first_name, last_name, age } = req.body;
           const email = username;
 
           if (!first_name || !last_name || !email || !age || !password) {
@@ -38,7 +38,6 @@ export const initializePassport = () => {
             email,
             age: Number(age),
             password: createHash(password),
-            role: role || 'user',
           });
 
           const cart = await cartModel.create({
