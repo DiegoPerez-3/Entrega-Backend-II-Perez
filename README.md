@@ -29,7 +29,7 @@ Crear un archivo `.env` en la raíz del proyecto tomando como referencia `.env.e
 ```env
 PORT=8080
 MONGO_URI=mongodb://localhost:27017/ecommerce
-JWT_SECRET=coderSecretKey123
+JWT_SECRET=tu_clave_secreta
 ```
 
 > **Nota de seguridad:** El archivo `.env` contiene información sensible y se encuentra ignorado en `.gitignore`, por lo que no está incluido en el repositorio.
