@@ -1,0 +1,87 @@
+<div class="page-header">
+    <h1>Productos</h1>
+    <p>Explorá nuestro catálogo</p>
+</div>
+
+{{#if products.length}}
+<div id="productsGrid" class="products-grid">
+    {{#each products}}
+    <div class="product-card">
+        {{#if this.thumbnail}}
+            <img src="{{this.thumbnail}}" alt="{{this.title}}" class="card-img">
+        {{else}}
+            <div class="card-img-placeholder">
+                <i class="fas fa-box-open"></i>
+            </div>
+        {{/if}}
+
+        <div class="card-body">
+            {{#if this.category}}
+                <span class="card-category">{{this.category}}</span>
+            {{/if}}
+            <h3 class="card-title">{{this.title}}</h3>
+            {{#if this.description}}
+                <p class="card-description">{{this.description}}</p>
+            {{/if}}
+        </div>
+
+        <div class="card-footer">
+            <div>
+                <div class="card-price">${{this.price}}</div>
+                {{#if this.stock}}
+                    <span class="card-stock">Stock: {{this.stock}}</span>
+                {{/if}}
+            </div>
+            <div class="card-actions">
+                <button class="btn-icon btn-fav btn-favorites" data-id="{{this._id}}" title="Agregar a favoritos">
+                    <i class="fas fa-heart"></i>
+                </button>
+                <button class="btn-icon btn-cart btn-cart" data-id="{{this._id}}" title="Agregar al carrito">
+                    <i class="fas fa-cart-plus"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    {{/each}}
+</div>
+{{else}}
+<div class="empty-state">
+    <i class="fas fa-box-open"></i>
+    <p>No hay productos disponibles</p>
+</div>
+{{/if}}
+
+<script>
+    const cardProducts = document.getElementById('productsGrid');
+    cardProducts.addEventListener('click', async (event) => {
+        const target = event.target;
+        const productId = target.closest('button')?.dataset.id;
+
+        if(target.classList.contains('btn-favorites')) {
+            try {
+                const response = await fetch(`/api/favorites/`,{
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ productId })
+                });
+                const result = await response.json();
+                console.log("remove click")
+                if (response.ok) {
+                    alert('Producto agregado al carrito');
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            }catch (error) {
+                console.error('Error al agregar el producto:', error);
+            }
+        }
+
+        if(target.classList.contains('btn-cart')){
+
+        }
+
+       
+    });
+</script>

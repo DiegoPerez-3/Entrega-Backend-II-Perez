@@ -1,0 +1,29 @@
+    <nav>
+        <a href="/" class="logo">🛒 Mi Tienda</a>
+        <div class="nav-icons">
+            <a href="/favorites" title="Favoritos">
+                <i class="fas fa-heart"></i>
+            </a>
+            <a href="/cart" title="Carrito">
+                <i class="fas fa-shopping-cart"></i>
+            </a>
+            <button id="btnLogout" title="Cerrar sesión">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        const btnLogout = document.getElementById("btnLogout")
+        btnLogout.addEventListener("click",async ()=>{
+            try{
+                const response = await fetch("/api/auth/logout")
+                const data = await response.json()
+                if(data.message === "User logger out successfully"){
+                    location.replace("/login")
+                }
+            }catch(error){
+                alert("error al deslogiarse")
+            }
+        })
+    </script>

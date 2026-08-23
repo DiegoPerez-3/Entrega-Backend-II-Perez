@@ -1,0 +1,82 @@
+<div class="page-header">
+    <h1><i class="fas fa-heart"></i> Mis Favoritos</h1>
+    <p>{{favorites.length}} producto{{#if favorites.length}}(s){{/if}} guardado(s)</p>
+</div>
+
+{{#if favorites.length}}
+<div id="favoritesList" class="favorites-list">
+    {{#each favorites}}
+    <div class="fav-card" id="fav-card-{{this._id}}">
+        {{#if this.thumbnail}}
+            <img src="{{this.thumbnail}}" alt="{{this.title}}" class="fav-img">
+        {{else}}
+            <div class="fav-img-placeholder">
+                <i class="fas fa-heart"></i>
+            </div>
+        {{/if}}
+
+        <div class="fav-info">
+            {{#if this.category}}
+                <span class="fav-category">{{this.category}}</span>
+            {{/if}}
+            <h3 class="fav-title">{{this.title}}</h3>
+            {{#if this.description}}
+                <p class="fav-description">{{this.description}}</p>
+            {{/if}}
+            <div class="fav-bottom">
+                <span class="fav-price">${{this.price}}</span>
+                {{#if this.stock}}
+                    <span class="fav-stock">Stock: {{this.stock}}</span>
+                {{/if}}
+            </div>
+        </div>
+
+        <div class="fav-actions">
+            <button class="btn-add-cart" data-id="{{this._id}}">
+                <i class="fas fa-cart-plus"></i> Agregar
+            </button>
+            <button class="btn-remove" data-id="{{this._id}}">
+                <i class="fas fa-trash-can"></i> Quitar
+            </button>
+        </div>
+    </div>
+    {{/each}}
+</div>
+{{else}}
+<div class="empty-state">
+    <i class="far fa-heart"></i>
+    <p>No tenés productos en favoritos</p>
+    <a href="/" class="btn-back">Ver productos</a>
+</div>
+{{/if}}
+
+<script>
+    const favoritesList = document.getElementById('favoritesList');
+    favoritesList.addEventListener('click', async (event) => {
+        const target = event.target;
+        const productId = target.closest('button')?.dataset.id;
+        console.log("productId", productId)
+
+        if(target.classList.contains('btn-remove')) {
+            console.log("remove click")
+            try {
+                const response = await fetch(`/api/favorites/${productId}`,{
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.status === "success") {
+                    location.reload();
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            }catch (error) {
+                console.error('Error al eliminar el favorito:', error);
+            }
+        }
+
+        if(target.classList.contains('btn-cart')){
+
+        }
+    });
+</script>
+
