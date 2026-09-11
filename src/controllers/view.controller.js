@@ -1,4 +1,3 @@
-import userModel from '../models/user.model.js';
 import ProductModel from '../models/products.model.js';
 import FavoriteModel from '../models/favorites.model.js';
 
@@ -41,10 +40,20 @@ const favorites = async (req, res) => {
   }
 };
 
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.query;
+    res.render('resetPassword', { token });
+  } catch (error) {
+    res.json({ status: 'error', message: error.message });
+  }
+};
+
 export const viewController = {
   register,
   login,
   home,
   cart,
   favorites,
+  resetPassword,
 };

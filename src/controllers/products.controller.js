@@ -1,74 +1,90 @@
-import productsModel from '../models/products.model.js';
+import { productsService } from '../services/products.service.js';
 
+// Controlador fino para Productos.
+// No importa modelos de Mongoose directamente; consume la lógica de productsService.
 const getProducts = async (req, res) => {
   try {
-    const products = await productsModel.find({});
-    res.json({ status: 'success', payload: products });
+    const products = await productsService.getProducts();
+    res.status(200).json({ status: 'success', payload: products });
   } catch (error) {
-    res.json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
 const getProductById = async (req, res) => {
-  const id = req.params.id;
-  if (!id) return res.json({ status: 'error', message: 'id invalido' });
   try {
-    const product = await productsModel.findOne({ _id: id });
-    if (!product) return res.json({ status: 'error', message: 'id invalido' });
-    res.json({ status: 'success', payload: product });
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ status: 'error', message: 'ID inválido' });
+    }
+    const product = await productsService.getProductById(id);
+    if (!product) {
+      return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
+    }
+    res.status(200).json({ status: 'success', payload: product });
   } catch (error) {
-    res.json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
 const createProduct = async (req, res) => {
-  if (!req.body) {
-    return res.status(400).json({ status: 'error', message: 'Body vacío o mal formado' });
-  }
-  const { title, description, price, stock, thumbnail, category } = req.body;
-  if (!title || !price || !stock) return res.json({ status: 'error', message: 'faltan datos' });
   try {
-    const product = await productsModel.create({ title, price, stock, description, thumbnail, category });
-    res.json({ status: 'success', payload: product });
+    if (!req.body) {
+      return res.status(400).json({ status: 'error', message: 'Body vacío o mal formado' });
+    }
+    const { title, description, price, stock, thumbnail, category } = req.body;
+    if (!title || price === undefined || stock === undefined) {
+      return res.status(400).json({ status: 'error', message: 'Faltan datos obligatorios' });
+    }
+
+    const newProduct = await productsService.createProduct({
+      title,
+      description,
+      price,
+      stock,
+      thumbnail,
+      category,
+    });
+    res.status(201).json({ status: 'success', payload: newProduct });
   } catch (error) {
-    res.json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
 const updateProduct = async (req, res) => {
-  const id = req.params.id;
-  if (!id) return res.json({ status: 'error', message: 'id invalido' });
-  if (!req.body) {
-    return res.status(400).json({ status: 'error', message: 'Body vacío o mal formado' });
-  }
-  const { title, description, price, stock } = req.body;
   try {
-    const product = await productsModel.findOne({ _id: id });
-    if (!product) return res.json({ status: 'error', message: 'id invalido' });
-    const productUpdated = await productsModel.findByIdAndUpdate(
-      { _id: id },
-      { title, description, price, stock },
-      { new: true },
-    );
-    res.json({ status: 'success', payload: productUpdated });
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ status: 'error', message: 'ID inválido' });
+    }
+    if (!req.body) {
+      return res.status(400).json({ status: 'error', message: 'Body vacío o mal formado' });
+    }
+
+    const updatedProduct = await productsService.updateProduct(id, req.body);
+    if (!updatedProduct) {
+      return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
+    }
+    res.status(200).json({ status: 'success', payload: updatedProduct });
   } catch (error) {
-    res.json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
 const deleteProduct = async (req, res) => {
-  const id = req.params.id;
-  if (!id) return res.json({ status: 'error', message: 'id invalido' });
   try {
-    const product = await productsModel.findOne({ _id: id });
-    if (!product) return res.json({ status: 'error', message: 'id invalido' });
-    const productDeleted = await productsModel.findByIdAndDelete({ _id: id });
-    const productFound = await productsModel.findOne({ _id: id });
-    if (productFound)
-      return res.json({ status: 'error', message: 'Error al eliminar el producto' });
-    res.json({ status: 'success', payload: productDeleted });
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ status: 'error', message: 'ID inválido' });
+    }
+
+    const deletedProduct = await productsService.deleteProduct(id);
+    if (!deletedProduct) {
+      return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
+    }
+    res.status(200).json({ status: 'success', payload: deletedProduct });
   } catch (error) {
-    res.json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 

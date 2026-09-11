@@ -1,16 +1,17 @@
 import passport from 'passport';
 import passportLocal from 'passport-local';
 import passportJWT from 'passport-jwt';
-import userModel from '../models/user.model.js';
-import cartModel from '../models/cart.model.js';
-import { createHash, isValidPassword } from '../utils/hash.js';
+import { usersRepository } from '../repositories/users.repository.js';
+import { authService } from '../services/auth.service.js';
 import { config } from './env.config.js';
 
+// Extractor personalizado para obtener el JWT desde la cookie 'token_coder'
 const cookieExtractor = (req) => {
   return req && req.cookies ? req.cookies['token_coder'] : null;
 };
 
 export const initializePassport = () => {
+  // Estrategia Local para Registro
   passport.use(
     'register',
     new passportLocal.Strategy(
@@ -27,29 +28,19 @@ export const initializePassport = () => {
             return done(null, false, { message: 'Faltan datos obligatorios' });
           }
 
-          const exists = await userModel.findOne({ email });
-          if (exists) {
+          const existingUser = await usersRepository.getByEmail(email);
+          if (existingUser) {
             return done(null, false, { message: 'El usuario ya existe' });
           }
 
-          const user = await userModel.create({
+          // Delegamos la creación al AuthService que también crea y asocia el carrito
+          const userObject = await authService.registerUser({
             first_name,
             last_name,
             email,
-            age: Number(age),
-            password: createHash(password),
+            age,
+            password,
           });
-
-          const cart = await cartModel.create({
-            userId: user._id,
-            products: [],
-          });
-
-          user.cart = cart._id;
-          await user.save();
-
-          const userObject = user.toObject();
-          delete userObject.password;
 
           return done(null, userObject);
         } catch (error) {
@@ -59,6 +50,7 @@ export const initializePassport = () => {
     )
   );
 
+  // Estrategia Local para Login
   passport.use(
     'login',
     new passportLocal.Strategy(
@@ -67,17 +59,11 @@ export const initializePassport = () => {
       },
       async (username, password, done) => {
         try {
-          const user = await userModel.findOne({ email: username }).select('+password');
-          if (!user) {
+          // Validamos credenciales delegando al AuthService
+          const userObject = await authService.validateUserLogin(username, password);
+          if (!userObject) {
             return done(null, false, { message: 'Usuario o contraseña incorrectos' });
           }
-
-          if (!isValidPassword(password, user.password)) {
-            return done(null, false, { message: 'Usuario o contraseña incorrectos' });
-          }
-
-          const userObject = user.toObject();
-          delete userObject.password;
 
           return done(null, userObject);
         } catch (error) {
@@ -87,6 +73,8 @@ export const initializePassport = () => {
     )
   );
 
+  // Estrategia JWT para Current
+  // Extrae el token de la cookie y recupera el usuario vigente directamente de la base de datos
   passport.use(
     'current',
     new passportJWT.Strategy(
@@ -96,8 +84,21 @@ export const initializePassport = () => {
       },
       async (jwtPayload, done) => {
         try {
-          const user = jwtPayload.user || jwtPayload;
-          return done(null, user);
+          const userId = jwtPayload.user?._id || jwtPayload.user?.id || jwtPayload._id || jwtPayload.id;
+          if (!userId) {
+            return done(null, false, { message: 'Token sin identificador de usuario válido' });
+          }
+
+          // Buscamos al usuario en la base de datos para garantizar datos actualizados
+          const user = await usersRepository.getById(userId);
+          if (!user) {
+            return done(null, false, { message: 'Usuario no encontrado' });
+          }
+
+          const userObj = user.toObject ? user.toObject() : { ...user };
+          delete userObj.password;
+
+          return done(null, userObj);
         } catch (error) {
           return done(error, false);
         }

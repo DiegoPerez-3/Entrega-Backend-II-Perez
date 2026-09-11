@@ -1,10 +1,10 @@
-import userModel from '../models/user.model.js';
-import cartModel from '../models/cart.model.js';
-import { createHash } from '../utils/hash.js';
+import { usersService } from '../services/users.service.js';
 
+// Controlador para Usuarios.
+// Conecta las rutas de /api/users con usersService.
 const getUsers = async (req, res) => {
   try {
-    const users = await userModel.find().populate('cart');
+    const users = await usersService.getAllUsers();
     res.status(200).json({ status: 'success', payload: users });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
@@ -14,7 +14,7 @@ const getUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const { uid } = req.params;
-    const user = await userModel.findById(uid).populate('cart');
+    const user = await usersService.getUserById(uid);
     if (!user) {
       return res.status(404).json({ status: 'error', message: 'Usuario no encontrado' });
     }
@@ -31,38 +31,15 @@ const createUser = async (req, res) => {
     }
 
     const { first_name, last_name, email, age, password } = req.body;
-
     if (!first_name || !last_name || !email || !age || !password) {
       return res.status(400).json({ status: 'error', message: 'Faltan datos obligatorios' });
     }
 
-    const exists = await userModel.findOne({ email });
-    if (exists) {
-      return res.status(409).json({ status: 'error', message: 'El usuario ya existe' });
-    }
-
-    const user = await userModel.create({
-      first_name,
-      last_name,
-      email,
-      age: Number(age),
-      password: createHash(password),
-    });
-
-    const cart = await cartModel.create({
-      userId: user._id,
-      products: [],
-    });
-
-    user.cart = cart._id;
-    await user.save();
-
-    const userObject = user.toObject();
-    delete userObject.password;
-
-    res.status(201).json({ status: 'success', payload: userObject });
+    const newUser = await usersService.createUser({ first_name, last_name, email, age, password });
+    res.status(201).json({ status: 'success', payload: newUser });
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ status: 'error', message: error.message });
   }
 };
 
@@ -73,30 +50,12 @@ const updateUser = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Body vacío o mal formado' });
     }
 
-    const updateData = { ...req.body };
-    delete updateData.role;
-
-    if (updateData.password) {
-      updateData.password = createHash(updateData.password);
-    }
-
-    if (updateData.age) {
-      updateData.age = Number(updateData.age);
-    }
-
-    const updatedUser = await userModel.findByIdAndUpdate(uid, updateData, {
-      new: true,
-      runValidators: true,
-    }).populate('cart');
-
+    const updatedUser = await usersService.updateUser(uid, req.body);
     if (!updatedUser) {
       return res.status(404).json({ status: 'error', message: 'Usuario no encontrado' });
     }
 
-    const userObject = updatedUser.toObject();
-    delete userObject.password;
-
-    res.status(200).json({ status: 'success', payload: userObject });
+    res.status(200).json({ status: 'success', payload: updatedUser });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -105,22 +64,15 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { uid } = req.params;
-    const user = await userModel.findById(uid);
-
-    if (!user) {
+    const deleted = await usersService.deleteUser(uid);
+    if (!deleted) {
       return res.status(404).json({ status: 'error', message: 'Usuario no encontrado' });
     }
-
-    if (user.cart) {
-      await cartModel.findByIdAndDelete(user.cart);
-    }
-
-    const deletedUser = await userModel.findByIdAndDelete(uid);
 
     res.status(200).json({
       status: 'success',
       message: 'Usuario eliminado exitosamente',
-      payload: deletedUser,
+      payload: deleted,
     });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
