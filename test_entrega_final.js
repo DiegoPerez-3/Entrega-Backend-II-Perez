@@ -326,6 +326,7 @@ async function run() {
   });
   console.log('Login con contraseña nueva status:', newLoginRes.status);
   if (newLoginRes.status !== 200) throw new Error('FALLO: Login con nueva contraseña debe devolver 200');
+  const user1CookieNew = newLoginRes.headers.get('set-cookie').split(';')[0];
 
   console.log('✓ Flujo completo de recuperación y reseteo de contraseña verificado');
 
@@ -347,6 +348,57 @@ async function run() {
   console.log('Reset con token vencido status:', expiredResetRes.status);
   if (expiredResetRes.status !== 400) throw new Error('FALLO: Token vencido debe ser rechazado con 400');
   console.log('✓ Token vencido rechazado correctamente');
+
+  // --- PRUEBA 10: SEGURIDAD — BLOQUEO DE REASIGNACIÓN DE CARRITO Y VALIDACIÓN DE PROPIEDAD ---
+  console.log('\n--- PRUEBA 10: SEGURIDAD — BLOQUEO DE REASIGNACIÓN DE CARRITO ---');
+
+  // A) Intentar cambiar el campo cart del propio usuario vía PUT /api/users/:uid
+  const putCartRes = await fetch(BASE + `/api/users/${reg1.payload._id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Cookie': user1CookieNew },
+    body: JSON.stringify({ cart: user2CartId })
+  });
+  console.log('Intento de modificar cart en PUT /api/users/:uid status:', putCartRes.status);
+
+  // Verificar que el campo cart del usuario NO cambió en /current ni en MongoDB
+  const currentCheckRes = await fetch(BASE + '/api/sessions/current', {
+    headers: { 'Cookie': user1CookieNew }
+  });
+  const currentCheckData = await currentCheckRes.json();
+  const currentCartId = (currentCheckData.payload?.cart?._id || currentCheckData.payload?.cart)?.toString();
+  console.log('Cart en /current tras intento de manipulación:', currentCartId);
+
+  const dbUserCheck = await mongoose.default.connection.db.collection('users').findOne({
+    _id: new mongoose.default.Types.ObjectId(reg1.payload._id)
+  });
+  const dbCartId = dbUserCheck.cart?.toString();
+  console.log('Cart en base de datos tras intento de manipulación:', dbCartId);
+
+  if (currentCartId !== user1CartId.toString() || dbCartId !== user1CartId.toString()) {
+    throw new Error('FALLO DE SEGURIDAD: El campo cart fue modificado vía PUT');
+  }
+
+  // B) Intentar agregar producto al carrito de otro usuario después del intento de manipulación -> 403
+  const addForeignRes = await fetch(BASE + `/api/carts/${user2CartId}/product/${prodA._id}`, {
+    method: 'POST',
+    headers: { 'Cookie': user1CookieNew }
+  });
+  console.log('Agregar producto a carrito ajeno status:', addForeignRes.status);
+  if (addForeignRes.status !== 403) {
+    throw new Error('FALLO: Agregar a carrito ajeno debe responder 403');
+  }
+
+  // C) Intentar hacer purchase del carrito de otro usuario después del intento de manipulación -> 403
+  const purchaseForeignRes = await fetch(BASE + `/api/carts/${user2CartId}/purchase`, {
+    method: 'POST',
+    headers: { 'Cookie': user1CookieNew }
+  });
+  console.log('Comprar carrito ajeno status:', purchaseForeignRes.status);
+  if (purchaseForeignRes.status !== 403) {
+    throw new Error('FALLO: Comprar carrito ajeno debe responder 403');
+  }
+
+  console.log('✓ Reasignación de carrito bloqueada y propiedad validada estrictamente por cart.userId === user._id');
 
   await mongoose.default.disconnect();
   console.log('\n========================================');

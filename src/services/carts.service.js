@@ -18,14 +18,14 @@ class CartsService {
       throw error;
     }
 
-    // 2. Validar que el usuario sea el dueño del carrito
+    // 2. Validar que el usuario sea el dueño del carrito (únicamente mediante cart.userId === user._id)
     const cartOwnerId = (cart.userId?._id || cart.userId)?.toString();
     const authenticatedUserId = (user?._id || user?.id)?.toString();
-    const authenticatedUserCartId = (user?.cart?._id || user?.cart)?.toString();
 
     const isOwner =
-      (cartOwnerId && cartOwnerId === authenticatedUserId) ||
-      (authenticatedUserCartId && authenticatedUserCartId === cartId.toString());
+      cartOwnerId &&
+      authenticatedUserId &&
+      cartOwnerId === authenticatedUserId;
 
     if (!isOwner) {
       const error = new Error('No tiene permisos para modificar este carrito');

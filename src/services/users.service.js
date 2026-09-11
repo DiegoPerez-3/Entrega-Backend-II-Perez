@@ -54,10 +54,11 @@ class UsersService {
     return userObj;
   }
 
-  // Actualizar usuario: no permite modificar el rol libremente
+  // Actualizar usuario: no permite modificar el rol ni el carrito asignado
   async updateUser(id, updateData) {
     const dataToUpdate = { ...updateData };
     delete dataToUpdate.role; // Protección de integridad del rol
+    delete dataToUpdate.cart; // Protección: el usuario no puede reasignarse manualmente otro carrito
 
     if (dataToUpdate.password) {
       dataToUpdate.password = createHash(dataToUpdate.password);

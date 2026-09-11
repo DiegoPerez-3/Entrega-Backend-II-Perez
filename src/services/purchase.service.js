@@ -15,14 +15,14 @@ class PurchaseService {
       throw error;
     }
 
-    // 2. Validar que el carrito pertenezca al usuario autenticado (seguridad de propiedad)
+    // 2. Validar que el carrito pertenezca al usuario autenticado (únicamente mediante cart.userId === user._id)
     const cartOwnerId = (cart.userId?._id || cart.userId)?.toString();
     const authenticatedUserId = (user?._id || user?.id)?.toString();
-    const authenticatedUserCartId = (user?.cart?._id || user?.cart)?.toString();
 
     const isOwner =
-      (cartOwnerId && cartOwnerId === authenticatedUserId) ||
-      (authenticatedUserCartId && authenticatedUserCartId === cartId.toString());
+      cartOwnerId &&
+      authenticatedUserId &&
+      cartOwnerId === authenticatedUserId;
 
     if (!isOwner) {
       const error = new Error('No tiene permisos para comprar este carrito');
