@@ -50,6 +50,16 @@ const updateUser = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Body vacío o mal formado' });
     }
 
+    // Permitir actualización únicamente si es el propio usuario autenticado o tiene rol 'admin'
+    const isSelf = req.user && String(req.user._id) === String(uid);
+    const isAdmin = req.user && req.user.role === 'admin';
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'No tienes permiso para modificar este usuario',
+      });
+    }
+
     const updatedUser = await usersService.updateUser(uid, req.body);
     if (!updatedUser) {
       return res.status(404).json({ status: 'error', message: 'Usuario no encontrado' });

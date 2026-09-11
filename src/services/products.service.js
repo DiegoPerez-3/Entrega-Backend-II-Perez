@@ -28,12 +28,8 @@ class ProductsService {
     });
   }
 
-  // Actualización de producto existente
+  // Actualización de producto existente: invoca directamente updateById sin consulta previa redundante
   async updateProduct(id, data) {
-    const product = await productsRepository.getById(id);
-    if (!product) {
-      return null;
-    }
     const updateData = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
@@ -45,12 +41,8 @@ class ProductsService {
     return productsRepository.updateById(id, updateData);
   }
 
-  // Eliminación de producto del catálogo
+  // Eliminación de producto del catálogo: invoca directamente deleteById sin consulta previa redundante
   async deleteProduct(id) {
-    const product = await productsRepository.getById(id);
-    if (!product) {
-      return null;
-    }
     return productsRepository.deleteById(id);
   }
 }

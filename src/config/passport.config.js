@@ -11,7 +11,7 @@ const cookieExtractor = (req) => {
 };
 
 export const initializePassport = () => {
-  // Estrategia Local para Registro
+  // Estrategia Local para Registro: valida datos obligatorios y delega el registro al AuthService
   passport.use(
     'register',
     new passportLocal.Strategy(
@@ -28,12 +28,7 @@ export const initializePassport = () => {
             return done(null, false, { message: 'Faltan datos obligatorios' });
           }
 
-          const existingUser = await usersRepository.getByEmail(email);
-          if (existingUser) {
-            return done(null, false, { message: 'El usuario ya existe' });
-          }
-
-          // Delegamos la creación al AuthService que también crea y asocia el carrito
+          // Delegamos la creación al AuthService que valida de forma única si el usuario ya existe y asocia el carrito
           const userObject = await authService.registerUser({
             first_name,
             last_name,
@@ -44,7 +39,7 @@ export const initializePassport = () => {
 
           return done(null, userObject);
         } catch (error) {
-          return done(error, false);
+          return done(null, false, { message: error.message || 'Error en el registro' });
         }
       }
     )

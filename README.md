@@ -34,7 +34,7 @@ Model / Repository
 
 ### Responsabilidades por Capa:
 1. **Routes (`src/routes/`)**: Definición exclusiva de rutas, endpoints y middlewares de autenticación/autorización.
-2. **Controllers (`src/controllers/`)**: Capa delgada encargada de recibir las peticiones (`req`), invocar los métodos del Service correspondiente y responder (`res`) con los códigos HTTP pertinentes. No importan modelos de Mongoose.
+2. **Controllers (`src/controllers/`)**: Capa delgada encargada de recibir las peticiones (`req`), invocar los métodos del Service correspondiente y responder (`res`) con los códigos HTTP pertinentes. Los controllers principales de la API evaluada delegan la lógica a Services y no acceden directamente a los modelos Mongoose.
 3. **Services (`src/services/`)**: Contiene toda la lógica de negocio del sistema: validaciones, propiedad de carritos, cálculo de totales, verificación de stock atómico, gestión de compras parciales/completas, emisión de tickets y flujo de recuperación de contraseña.
 4. **Repositories (`src/repositories/`)**: Abstraen la persistencia de datos consumiendo los DAOs correspondientes. No interactúan con `req`/`res` ni con modelos Mongoose directos.
 5. **DAOs (`src/daos/`)**: Capa exclusiva que interactúa directamente con los modelos de Mongoose para operaciones CRUD y atómicas sobre MongoDB.
@@ -176,7 +176,7 @@ GMAIL_PASS=tu_app_password
 | `GET` | `/api/users` | Lista todos los usuarios | `passportCall('current')` + `authorize('admin')` |
 | `GET` | `/api/users/:uid` | Obtiene un usuario por ID | Público |
 | `POST` | `/api/users` | Crea un usuario con carrito | Público |
-| `PUT` | `/api/users/:uid` | Actualiza datos (no permite alterar role) | Público |
+| `PUT` | `/api/users/:uid` | Actualiza datos (no permite alterar role) | `passportCall('current')` (propio usuario o `admin`) |
 | `DELETE` | `/api/users/:uid` | Elimina usuario y su carrito asociado | `passportCall('current')` + `authorize('admin')` |
 
 ### 5. Vistas Web (`/`)

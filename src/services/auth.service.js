@@ -101,7 +101,10 @@ class AuthService {
     try {
       await mailService.sendPasswordResetMail(user.email, resetUrl);
     } catch (mailError) {
-      console.warn('Advertencia al enviar correo de recuperación (SMTP):', mailError.message);
+      // Si el envío de correo falla, eliminamos el token recién generado para no dejar registros huérfanos
+      await passwordResetRepository.deleteByToken(token);
+      mailError.statusCode = mailError.statusCode || 500;
+      throw mailError;
     }
 
     return {

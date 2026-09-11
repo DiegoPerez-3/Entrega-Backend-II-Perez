@@ -8,7 +8,7 @@ const router = Router();
 router.get('/', passportCall('current'), authorize('admin'), usersController.getUsers);
 router.get('/:uid', usersController.getUserById);
 router.post('/', usersController.createUser);
-router.put('/:uid', usersController.updateUser);
+router.put('/:uid', passportCall('current'), usersController.updateUser);
 router.delete('/:uid', passportCall('current'), authorize('admin'), usersController.deleteUser);
 
 export default router;
